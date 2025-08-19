@@ -1,0 +1,34 @@
+{
+  "name": "dex223-v3-margin-module",
+  "version": "1.0.0",
+  "repository": "https://github.com/kostya12362/dex223-subgraph",
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "template": "export $(xargs < .env) && mustache ./config/$NETWORK.js subgraph.template.yaml > subgraph.yaml && mustache ./config/$NETWORK.js ./src/utils/constants.template.ts > ./src/utils/constants.ts",
+    "compile": "graph codegen --output-dir src/types/ && graph build",
+    "codegen": "graph codegen --output-dir src/types/",
+    "build": "graph build",
+    "build:docker": "docker build -t matchstick ${PWD}/tests/.docker/Dockerfile",
+    "test": "graph test -d",
+    "test:no-tty": "docker run -i --rm --mount type=bind,source=$INIT_CWD,target=/matchstick matchstick",
+    "auth:thegraph": "export $(xargs < .env) && graph deploy --studio dex223-v1-$NETWORK",
+    "deploy:studio": "export $(xargs < .env) && yarn auth:thegraph && graph deploy --studio dex223-v1-$NETWORK",
+    "deploy:thegraph": "export $(xargs < .env) && graph deploy --product hosted-service kostya12362/dex223-v1-$NETWORK subgraph.yaml",
+    "create:thegraph": "graph create sepolia/dex223-v1 --node https://api.thegraph.com/deploy/"
+  },
+  "devDependencies": {
+    "@graphprotocol/graph-cli": "^0.71.1",
+    "@graphprotocol/graph-ts": "^0.35.1",
+    "@typescript-eslint/eslint-plugin": "^2.0.0",
+    "@typescript-eslint/parser": "^2.0.0",
+    "eslint": "^6.2.2",
+    "eslint-config-prettier": "^6.1.0",
+    "matchstick-as": "^0.6.0",
+    "mustache": "^4.0.1",
+    "prettier": "^1.18.2",
+    "typescript": "^3.5.2"
+  },
+  "dependencies": {
+    "source-map-support": "^0.5.21"
+  }
+}

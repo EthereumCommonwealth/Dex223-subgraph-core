@@ -1,0 +1,177 @@
+type Token @entity(immutable: false) {
+  id: ID!
+  addressERC20: String!
+  addressERC223: String!
+  name: String!
+  symbol: String!
+  decimals: BigInt
+}
+
+type WhiteList @entity {
+  id: ID! # address of the token
+  allowedForTrading: [String!] # теперь — опциональный список строк
+  allowedForTradingTokens: [Token!] # теперь — опциональный список Token
+  autoListing: String # теперь — опциональный Bytes
+}
+
+type Order @entity {
+  id: ID!
+  owner: Bytes!
+  whitelist: WhiteList
+  interestRate: BigInt!
+  duration: BigInt!
+  minLoan: BigInt!
+  minLoanFormatted: BigDecimal! # минимальная сумма займа в формате с плавающей точкой
+  balanceFormatted: BigDecimal! # текущий баланс в формате с плавающей точкой
+  balance: BigInt! # текущий баланс
+  baseAsset: Bytes! # address of base asset
+  baseAssetToken: Token!
+  currencyLimit: BigInt
+  leverage: BigInt # максимальное плечо
+  liquidationRewardAmount: BigInt
+  liquidationRewardAsset: String # address of liquidation reward asset
+  liquidationRewardAssetToken: Token
+  deadline: BigInt! # enddate in timestamp
+  createdAt: BigInt!
+  updatedAt: BigInt!
+  collaterals: [String!]! # массив адресов токенов, которые могут быть использованы в качестве залога
+  collateralTokens: [Token!]!
+  positions: [Position!]! @derivedFrom(field: "order")
+  alive: Boolean! # true если order создан, false если заморожен или ликвидирован
+}
+
+type PositionAssets @entity {
+  id: ID! # positionId
+  index: BigInt! # индекс в массиве assets
+  address: Bytes!
+  balance: BigInt! # balance of the asset in the position
+}
+
+type Position @entity {
+  id: ID! # positionId
+  order: Order! # связь по orderId
+  owner: Bytes! # msg.sender при PositionOpened
+  assets: [PositionAssets!] # массив текущих активов
+  assetsTokens: [Token!] # массив токенов текущих активов
+  baseAsset: Bytes! # address of base asset
+  baseAssetToken: Token! # токен базового актива
+  deadline: BigInt # срок (duration из order)
+  initialBalance: BigInt # loanAmount
+  interest: BigInt # interestRate
+  # paidDays: BigInt # paidDays
+  isClosed: Boolean! # true после PositionClosed
+  closedAt: BigInt # timestamp из PositionClosed
+  # open: Boolean # true после открытия, false после заморозки/ликвидации
+  frozenTime: BigInt # timestamp из PositionFrozen
+  liquidator: Bytes # из PositionFrozen / PositionLiquidated
+  loanAmount: BigInt # loanAmount из PositionOpened
+  # таймстемп обновления
+  isLiquidated: Boolean! # true после PositionLiquidated
+  liquidatedAt: BigInt # timestamp из PositionLiquidated
+  createdAt: BigInt! # block.timestamp при PositionOpened
+  updatedAt: BigInt! # меняется при каждом событии по позиции
+  txFrozen: String
+  txClosed: String
+  txLiquidated: String
+  collateral: String!
+  collateralToken: Token! # токен залога
+  collateralAmount: BigInt! # количество залога
+  transactions: [Transaction!]! # массив транзакций, связанных с позицией
+}
+
+type MarginSwapTx @entity {
+  id: ID! # positionId
+  positionId: BigInt! # индекс в массиве assets
+  position: Position!
+  assetIn: String!
+  assetOut: String! # balance of the asset in the position
+  assetInToken: Token # токен актива входа
+  assetOutToken: Token # токен актива выхода
+  amountIn: BigInt! # amount of assetIn
+  amountOut: BigInt! # amount of assetOut
+  transaction: Transaction!
+  timestamp: BigInt! # timestamp of the swap
+  blockNumber: BigInt! # block number of the swap
+}
+
+type PositionOpenedTx @entity {
+  id: ID! # positionId
+  positionId: BigInt! # индекс в массиве positions
+  owner: Bytes! # msg.sender при PositionOpened
+  loanAmount: BigInt! # loanAmount из PositionOpened
+  baseAsset: Bytes! # address of base asset
+  baseAssetToken: Token! # токен базового актива
+  transaction: Transaction!
+  timestamp: BigInt! # timestamp of the swap
+  blockNumber: BigInt! # block number of the swap
+}
+
+type PositionFrozenTx @entity {
+  id: ID! # orderId
+  positionId: BigInt! # индекс в массиве positions
+  liquidator: Bytes! # msg.sender при PositionFrozen
+  transaction: Transaction!
+  timestamp: BigInt! # timestamp of the swap
+  blockNumber: BigInt! # block number of the swap
+}
+
+type PositionClosedTx @entity {
+  id: ID! # positionId
+  positionId: BigInt! # индекс в массиве positions
+  closedBy: Bytes! # msg.sender при PositionClosed
+  transaction: Transaction!
+  timestamp: BigInt! # timestamp of the close
+  blockNumber: BigInt! # block number of the close
+}
+
+type PositionWithdrawalTx @entity {
+  id: ID! # positionId
+  positionId: BigInt! # индекс в массиве positions
+  asset: String! # address of the asset
+  assetToken: Token! # токен актива
+  quantity: BigInt! # amount of the asset
+  transaction: Transaction!
+  timestamp: BigInt! # timestamp of the withdrawal
+  blockNumber: BigInt! # block number of the withdrawal
+}
+
+type PositionLiquidatedTx @entity {
+  id: ID! # orderId
+  positionId: BigInt! # индекс в массиве positions
+  liquidator: Bytes! # msg.sender при PositionLiquidated
+  transaction: Transaction!
+  timestamp: BigInt! # timestamp of the swap
+  blockNumber: BigInt! # block number of the swap
+}
+
+type PositionDepositTx @entity {
+  id: ID! # positionId
+  positionId: BigInt! # индекс в массиве positions
+  asset: String! # address of the asset
+  assetToken: Token! # токен актива
+  amount: BigInt! # amount of the asset
+  transaction: Transaction!
+  timestamp: BigInt! # timestamp of the deposit
+  blockNumber: BigInt! # block number of the deposit
+}
+
+type Transaction @entity {
+  # txn hash
+  id: ID!
+  # block txn was included in
+  blockNumber: BigInt!
+  # timestamp txn was confirmed
+  timestamp: BigInt!
+  # gas used during txn execution
+  gasUsed: BigInt!
+  gasPrice: BigInt!
+  key: String!
+  position: Position
+  marginSwap: [MarginSwapTx]! @derivedFrom(field: "transaction")
+  positionClosed: [PositionClosedTx]! @derivedFrom(field: "transaction")
+  positionWithdrawal: [PositionWithdrawalTx]! @derivedFrom(field: "transaction")
+  positionDeposit: [PositionDepositTx]! @derivedFrom(field: "transaction")
+  positionOpened: [PositionOpenedTx]! @derivedFrom(field: "transaction")
+  positionFrozen: [PositionFrozenTx]! @derivedFrom(field: "transaction")
+  positionLiquidated: [PositionLiquidatedTx]! @derivedFrom(field: "transaction")
+}
