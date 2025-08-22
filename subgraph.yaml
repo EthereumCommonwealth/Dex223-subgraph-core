@@ -1,0 +1,67 @@
+specVersion: 1.0.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: MarginModule
+    network: sepolia
+    source:
+      address: "0xbe20f1459981814076e859f4a8476149c0516e96"
+      abi: MarginModule
+      startBlock: 8920115
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - MarginSwap
+        - OrderCreated
+        - OrderModified
+        - OrderAliveStatus
+        - OrderDeposit
+        - OrderWithdraw
+        - PositionDeposit
+        - PositionClosed
+        - PositionWithdrawal
+        - PositionFrozen
+        - Liquidation
+        - PositionOpened
+      abis:
+        - name: MarginModule
+          file: ./abis/MarginModule.json
+        - name: ERC20andERC223
+          file: ./abis/ERC20andERC223.json
+        - name: ERC20andERC223SymbolBytes
+          file: ./abis/ERC20andERC223SymbolBytes.json
+        - name: ERC20andERC223NameBytes
+          file: ./abis/ERC20andERC223NameBytes.json
+        - name: TokenConverter
+          file: ./abis/TokenConverter.json
+      eventHandlers:
+        - event: MarginSwap(indexed uint256,address,address,uint256,uint256)
+          handler: handleMarginSwap
+        - event: PositionClosed(indexed uint256,address)
+          handler: handlePositionClosed
+        - event: PositionWithdrawal(indexed uint256,indexed address,uint256)
+          handler: handlePositionWithdrawal
+        - event: OrderAliveStatus(indexed uint256,bool)
+          handler: handleOrderAliveStatus
+        - event: OrderCreated(indexed uint256,indexed address,indexed address,bytes32,uint256,uint256,uint256,uint8,address)
+          handler: handleOrderCreated
+        - event: OrderModified(indexed uint256,indexed address,indexed address,bytes32,uint256,uint256,uint256,uint8,address)
+          handler: handleOrderModified
+        - event: OrderDeposit(indexed uint256,indexed address,uint256)
+          handler: handleOrderDeposit
+        - event: OrderWithdraw(indexed uint256,indexed address,uint256)
+          handler: handleOrderWithdraw
+        - event: PositionDeposit(indexed uint256,indexed address,uint256)
+          handler: handlePositionDeposit
+        - event: PositionFrozen(indexed uint256,indexed address,uint256)
+          handler: handlePositionFrozen
+        - event: Liquidation(indexed uint256,indexed uint256,indexed address,address)
+          handler: handlePositionLiquidated
+        - event: PositionOpened(indexed uint256,indexed address,uint256,address,address,uint256)
+          handler: handlePositionOpened
+      file: ./src/mapping/index.ts
