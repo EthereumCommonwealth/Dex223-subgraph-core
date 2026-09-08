@@ -10,6 +10,7 @@ import {
   handlePositionFrozen,
   handlePositionLiquidated,
   handlePositionOpened,
+  handleInitialLeverage,
   handlePositionDeposit,
   handlePositionClosed,
   handlePositionWithdrawal,
@@ -27,6 +28,7 @@ export {
   handlePositionFrozen,
   handlePositionLiquidated,
   handlePositionOpened,
+  handleInitialLeverage,
   handlePositionClosed,
   handlePositionWithdrawal,
 };

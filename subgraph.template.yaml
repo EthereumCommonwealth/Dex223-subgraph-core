@@ -64,4 +64,6 @@ dataSources:
           handler: handlePositionLiquidated
         - event: PositionOpened(indexed uint256,indexed address,uint256,address,address,uint256)
           handler: handlePositionOpened
+        - event: InitialLeverage(uint256,uint256)
+          handler: handleInitialLeverage
       file: ./src/mapping/index.ts

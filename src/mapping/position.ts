@@ -1,5 +1,6 @@
 import {
   PositionOpened,
+  InitialLeverage,
   PositionDeposit,
   PositionFrozen,
   PositionClosed,
@@ -154,6 +155,15 @@ export function handlePositionLiquidated(event: PositionLiquidated): void {
   if (position == null) return;
   const contract = MarginModule.bind(event.address);
   const data = contract.try_positions(event.params.positionId);
+  if (data.reverted) {
+    // Without this check the handler read data.value on a reverted call, which aborts the mapping and
+    // stops the whole subgraph from indexing. handlePositionOpened already guards this the same way.
+    log.warning(
+      "positions() reverted for id {} in PositionLiquidated event: {}",
+      [id, event.transaction.hash.toHexString()]
+    );
+    return;
+  }
   const liquidator = data.value.getLiquidator();
   position.liquidator = liquidator; // liquidator как Bytes, не строка!
   position.updatedAt = event.block.timestamp;
@@ -219,5 +229,23 @@ export function handlePositionWithdrawal(event: PositionWithdrawal): void {
   positionWithdrawalTx.blockNumber = event.block.number;
   positionWithdrawalTx.transaction = tx.id;
   positionWithdrawalTx.save();
+  position.save();
+}
+
+/// The contract emits InitialLeverage right after PositionOpened in the same transaction, so the
+/// Position already exists by the time this runs. It was previously not indexed at all, which meant
+/// the leverage a position was opened at was lost.
+export function handleInitialLeverage(event: InitialLeverage): void {
+  const id = event.params.positionId.toString();
+  let position = Position.load(id);
+  if (!position) {
+    log.warning("Position with id {} not found for InitialLeverage event: {}", [
+      id,
+      event.transaction.hash.toHexString(),
+    ]);
+    return;
+  }
+  position.leverage = event.params.leverage;
+  position.updatedAt = event.block.timestamp;
   position.save();
 }
