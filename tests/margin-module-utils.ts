@@ -1,15 +1,19 @@
 import { newMockEvent } from "matchstick-as";
 import { ethereum, BigInt, Address } from "@graphprotocol/graph-ts";
 import {
+  InitialLeverage,
   MarginSwap,
+  OrderAliveStatus,
   OrderCreated,
   OrderDeposit,
   OrderWithdraw,
+  PositionClosed,
   PositionDeposit,
   PositionFrozen,
   PositionLiquidated,
   PositionOpened,
-} from "../dex-223-subgraph-margin-module-sepolia/generated/MarginModule/MarginModule";
+  PositionWithdrawal,
+} from "../src/types/MarginModule/MarginModule";
 
 export function createMarginSwapEvent(
   positionId: BigInt,
@@ -242,49 +246,102 @@ export function createPositionLiquidatedEvent(
 
 export function createPositionOpenedEvent(
   positionId: BigInt,
-  orderId: BigInt,
   owner: Address,
-  collateralAsset: Address,
   loanAmount: BigInt,
+  baseAsset: Address,
+  collateral: Address,
   collateralAmount: BigInt
 ): PositionOpened {
-  let positionOpenedEvent = changetype<PositionOpened>(newMockEvent());
-
-  positionOpenedEvent.parameters = new Array();
-
-  positionOpenedEvent.parameters.push(
-    new ethereum.EventParam(
-      "positionId",
-      ethereum.Value.fromUnsignedBigInt(positionId)
-    )
+  // NOTE: the previous version of this helper pushed (positionId, orderId, owner, collateralAsset,
+  // loanAmount, collateralAmount), which does not match the event. graph-ts reads parameters
+  // positionally, so it produced type-mismatched values. Order now follows the ABI:
+  // PositionOpened(positionId, owner, loanAmount, baseAsset, collateral, collateral_amount)
+  let event = changetype<PositionOpened>(newMockEvent());
+  event.parameters = new Array();
+  event.parameters.push(
+    new ethereum.EventParam("positionId", ethereum.Value.fromUnsignedBigInt(positionId))
   );
-  positionOpenedEvent.parameters.push(
-    new ethereum.EventParam(
-      "orderId",
-      ethereum.Value.fromUnsignedBigInt(orderId)
-    )
-  );
-  positionOpenedEvent.parameters.push(
+  event.parameters.push(
     new ethereum.EventParam("owner", ethereum.Value.fromAddress(owner))
   );
-  positionOpenedEvent.parameters.push(
-    new ethereum.EventParam(
-      "collateralAsset",
-      ethereum.Value.fromAddress(collateralAsset)
-    )
+  event.parameters.push(
+    new ethereum.EventParam("loanAmount", ethereum.Value.fromUnsignedBigInt(loanAmount))
   );
-  positionOpenedEvent.parameters.push(
-    new ethereum.EventParam(
-      "loanAmount",
-      ethereum.Value.fromUnsignedBigInt(loanAmount)
-    )
+  event.parameters.push(
+    new ethereum.EventParam("baseAsset", ethereum.Value.fromAddress(baseAsset))
   );
-  positionOpenedEvent.parameters.push(
+  event.parameters.push(
+    new ethereum.EventParam("collateral", ethereum.Value.fromAddress(collateral))
+  );
+  event.parameters.push(
     new ethereum.EventParam(
-      "collateralAmount",
+      "collateral_amount",
       ethereum.Value.fromUnsignedBigInt(collateralAmount)
     )
   );
+  return event;
+}
 
-  return positionOpenedEvent;
+export function createInitialLeverageEvent(
+  positionId: BigInt,
+  leverage: BigInt
+): InitialLeverage {
+  let event = changetype<InitialLeverage>(newMockEvent());
+  event.parameters = new Array();
+  event.parameters.push(
+    new ethereum.EventParam("positionId", ethereum.Value.fromUnsignedBigInt(positionId))
+  );
+  event.parameters.push(
+    new ethereum.EventParam("leverage", ethereum.Value.fromUnsignedBigInt(leverage))
+  );
+  return event;
+}
+
+export function createPositionClosedEvent(
+  positionId: BigInt,
+  closedBy: Address
+): PositionClosed {
+  let event = changetype<PositionClosed>(newMockEvent());
+  event.parameters = new Array();
+  event.parameters.push(
+    new ethereum.EventParam("positionId", ethereum.Value.fromUnsignedBigInt(positionId))
+  );
+  event.parameters.push(
+    new ethereum.EventParam("closedBy", ethereum.Value.fromAddress(closedBy))
+  );
+  return event;
+}
+
+export function createPositionWithdrawalEvent(
+  positionId: BigInt,
+  asset: Address,
+  amount: BigInt
+): PositionWithdrawal {
+  let event = changetype<PositionWithdrawal>(newMockEvent());
+  event.parameters = new Array();
+  event.parameters.push(
+    new ethereum.EventParam("positionId", ethereum.Value.fromUnsignedBigInt(positionId))
+  );
+  event.parameters.push(
+    new ethereum.EventParam("asset", ethereum.Value.fromAddress(asset))
+  );
+  event.parameters.push(
+    new ethereum.EventParam("amount", ethereum.Value.fromUnsignedBigInt(amount))
+  );
+  return event;
+}
+
+export function createOrderAliveStatusEvent(
+  orderId: BigInt,
+  alive: boolean
+): OrderAliveStatus {
+  let event = changetype<OrderAliveStatus>(newMockEvent());
+  event.parameters = new Array();
+  event.parameters.push(
+    new ethereum.EventParam("orderId", ethereum.Value.fromUnsignedBigInt(orderId))
+  );
+  event.parameters.push(
+    new ethereum.EventParam("alive", ethereum.Value.fromBoolean(alive))
+  );
+  return event;
 }

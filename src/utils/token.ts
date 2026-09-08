@@ -214,7 +214,12 @@ export function getPredictAddress(address: Address, isERC20: boolean): Address {
     address,
     isERC20
   );
-  return predict.value; // If prediction fails, return original address
+  // The comment below described the intent, but `.value` was returned unconditionally: reading it on a
+  // reverted call aborts the mapping and halts the whole subgraph. getIsWrapped() guards this correctly.
+  if (predict.reverted) {
+    return address; // If prediction fails, return original address
+  }
+  return predict.value;
 }
 
 export function getIsWrapped(address: Address): boolean {

@@ -19,10 +19,22 @@ import { fetchToekenList } from "../utils/tokenlist";
 function exportOrder(event: OrderCreated): Order | null {
   const id = event.params.orderId.toString();
   const contract = MarginModule.bind(event.address);
-  const data = contract.orders(event.params.orderId);
-  const collateralsArray = contract.getCollaterals(event.params.orderId);
+  // Plain (non-try) calls here would abort the mapping on revert and halt the subgraph; the rest of
+  // the codebase uses try_ so that a single bad event is skipped instead.
+  const ordersCall = contract.try_orders(event.params.orderId);
+  const collateralsCall = contract.try_getCollaterals(event.params.orderId);
+  if (ordersCall.reverted || collateralsCall.reverted) {
+    log.warning("orders()/getCollaterals() reverted for order {}", [id]);
+    return null;
+  }
+  const data = ordersCall.value;
+  const collateralsArray = collateralsCall.value;
   const whitelistedId = data.getWhitelist(); // bytes32
   const whitelistedTokens = fetchToekenList(whitelistedId, event.address); // WhiteList
+  if (whitelistedTokens == null) {
+    log.warning("Whitelist could not be read for order {}", [id]);
+    return null;
+  }
   let collateraTokens = fetchArrayTokens(collateralsArray);
   let order = Order.load(id);
   if (order == null) {
@@ -109,11 +121,13 @@ export function handleOrderDeposit(event: OrderDeposit): void {
   let balance = order.balance.plus(event.params.amount);
   order.balance = balance;
   let baseAssetToken = Token.load(order.baseAssetToken);
-  if (!baseAssetToken) {
+  if (baseAssetToken) {
+    order.balanceFormatted = toFormatValue(balance, baseAssetToken.decimals);
+  } else {
+    // Only the display value depends on the token. Returning here used to skip order.save()
+    // entirely, so the deposit was silently dropped and the indexed balance drifted from chain state.
     log.warning("Base asset token not found for order: {}", [id]);
-    return;
   }
-  order.balanceFormatted = toFormatValue(balance, baseAssetToken.decimals);
   order.updatedAt = event.block.timestamp;
   order.save();
 }
@@ -125,11 +139,13 @@ export function handleOrderWithdraw(event: OrderWithdraw): void {
   let balance = order.balance.minus(event.params.amount);
   order.balance = balance;
   let baseAssetToken = Token.load(order.baseAssetToken);
-  if (!baseAssetToken) {
+  if (baseAssetToken) {
+    order.balanceFormatted = toFormatValue(balance, baseAssetToken.decimals);
+  } else {
+    // Only the display value depends on the token. Returning here used to skip order.save()
+    // entirely, so the withdraw was silently dropped and the indexed balance drifted from chain state.
     log.warning("Base asset token not found for order: {}", [id]);
-    return;
   }
-  order.balanceFormatted = toFormatValue(balance, baseAssetToken.decimals);
   order.updatedAt = event.block.timestamp;
   order.save();
 }

@@ -896,6 +896,23 @@ export class Position extends Entity {
     }
   }
 
+  get leverage(): BigInt | null {
+    let value = this.get("leverage");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set leverage(value: BigInt | null) {
+    if (!value) {
+      this.unset("leverage");
+    } else {
+      this.set("leverage", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
   get isLiquidated(): boolean {
     let value = this.get("isLiquidated");
     if (!value || value.kind == ValueKind.NULL) {

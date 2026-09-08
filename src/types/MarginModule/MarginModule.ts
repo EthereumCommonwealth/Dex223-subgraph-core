@@ -452,6 +452,28 @@ export class PositionOpened__Params {
   }
 }
 
+export class InitialLeverage extends ethereum.Event {
+  get params(): InitialLeverage__Params {
+    return new InitialLeverage__Params(this);
+  }
+}
+
+export class InitialLeverage__Params {
+  _event: InitialLeverage;
+
+  constructor(event: InitialLeverage) {
+    this._event = event;
+  }
+
+  get positionId(): BigInt {
+    return this._event.parameters[0].value.toBigInt();
+  }
+
+  get leverage(): BigInt {
+    return this._event.parameters[1].value.toBigInt();
+  }
+}
+
 export class PositionWithdrawal extends ethereum.Event {
   get params(): PositionWithdrawal__Params {
     return new PositionWithdrawal__Params(this);

@@ -65,6 +65,7 @@ type Position @entity {
   frozenTime: BigInt # timestamp из PositionFrozen
   liquidator: Bytes # из PositionFrozen / PositionLiquidated
   loanAmount: BigInt # loanAmount из PositionOpened
+  leverage: BigInt # leverage the position was opened at, from InitialLeverage
   # таймстемп обновления
   isLiquidated: Boolean! # true после PositionLiquidated
   liquidatedAt: BigInt # timestamp из PositionLiquidated

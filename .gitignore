@@ -33,3 +33,7 @@ typechain-types
 # Hardhat files
 cache
 .DS_Store
+
+# matchstick / graph-cli build artifacts
+tests/.bin/
+tests/.latest.json
