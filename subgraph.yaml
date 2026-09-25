@@ -8,9 +8,9 @@ dataSources:
     name: MarginModule
     network: sepolia
     source:
-      address: "0xbe20f1459981814076e859f4a8476149c0516e96"
+      address: "0x12534e762d2224dc6e7db3827924e59d0fa50dce"
       abi: MarginModule
-      startBlock: 8920115
+      startBlock: 11779706
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
