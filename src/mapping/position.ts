@@ -1,3 +1,4 @@
+import { BigInt } from "@graphprotocol/graph-ts";
 import {
   PositionOpened,
   InitialLeverage,
@@ -11,6 +12,7 @@ import {
 
 import {
   Order,
+  Token,
   Position,
   PositionOpenedTx,
   PositionDepositTx,
@@ -149,6 +151,21 @@ export function handlePositionFrozen(event: PositionFrozen): void {
   position.save();
 }
 
+// positionClose and liquidation repay the lender inside the contract, and neither event says how
+// much, so the order kept its post-loan balance and the app understated what it can lend. Read the
+// balance back from the chain instead.
+function syncOrderBalance(contract: MarginModule, orderId: string): void {
+  let order = Order.load(orderId);
+  if (order == null) return;
+  const data = contract.try_orders(BigInt.fromString(orderId));
+  if (data.reverted) return;
+  const balance = data.value.getBalance();
+  const token = Token.load(order.baseAssetToken);
+  order.balance = balance;
+  order.balanceFormatted = toFormatValue(balance, token == null ? null : token.decimals);
+  order.save();
+}
+
 export function handlePositionLiquidated(event: PositionLiquidated): void {
   const id = event.params.positionId.toString();
   let position = Position.load(id);
@@ -170,6 +187,7 @@ export function handlePositionLiquidated(event: PositionLiquidated): void {
   position.isLiquidated = true;
   position.liquidatedAt = event.block.timestamp;
   position.txLiquidated = event.transaction.hash.toHexString();
+  syncOrderBalance(contract, position.order);
   let tx = loadTransaction(event, "PositionLiquidated", position);
 
   let liquidatedTx = new PositionLiquidatedTx(
@@ -190,6 +208,7 @@ export function handlePositionClosed(event: PositionClosed): void {
   if (position == null) return;
   const contract = MarginModule.bind(event.address);
   updatePositionAssets(position, contract);
+  syncOrderBalance(contract, position.order);
   position.txClosed = event.transaction.hash.toHexString();
   position.isClosed = true; // устанавливаем флаг, что позиция закрыта
   position.closedAt = event.block.timestamp; // сохраняем время закрытия позиции
