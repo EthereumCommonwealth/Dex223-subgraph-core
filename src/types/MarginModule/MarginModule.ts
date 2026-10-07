@@ -32,6 +32,28 @@ export class AssetRemoved__Params {
   }
 }
 
+export class InitialLeverage extends ethereum.Event {
+  get params(): InitialLeverage__Params {
+    return new InitialLeverage__Params(this);
+  }
+}
+
+export class InitialLeverage__Params {
+  _event: InitialLeverage;
+
+  constructor(event: InitialLeverage) {
+    this._event = event;
+  }
+
+  get positionId(): BigInt {
+    return this._event.parameters[0].value.toBigInt();
+  }
+
+  get leverage(): BigInt {
+    return this._event.parameters[1].value.toBigInt();
+  }
+}
+
 export class Liquidation extends ethereum.Event {
   get params(): Liquidation__Params {
     return new Liquidation__Params(this);
@@ -452,28 +474,6 @@ export class PositionOpened__Params {
   }
 }
 
-export class InitialLeverage extends ethereum.Event {
-  get params(): InitialLeverage__Params {
-    return new InitialLeverage__Params(this);
-  }
-}
-
-export class InitialLeverage__Params {
-  _event: InitialLeverage;
-
-  constructor(event: InitialLeverage) {
-    this._event = event;
-  }
-
-  get positionId(): BigInt {
-    return this._event.parameters[0].value.toBigInt();
-  }
-
-  get leverage(): BigInt {
-    return this._event.parameters[1].value.toBigInt();
-  }
-}
-
 export class PositionWithdrawal extends ethereum.Event {
   get params(): PositionWithdrawal__Params {
     return new PositionWithdrawal__Params(this);
@@ -878,17 +878,20 @@ export class MarginModule__subjectToLiquidationExtendedResult {
   value1: Address;
   value2: BigInt;
   value3: boolean;
+  value4: BigInt;
 
   constructor(
     value0: boolean,
     value1: Address,
     value2: BigInt,
     value3: boolean,
+    value4: BigInt,
   ) {
     this.value0 = value0;
     this.value1 = value1;
     this.value2 = value2;
     this.value3 = value3;
+    this.value4 = value4;
   }
 
   toMap(): TypedMap<string, ethereum.Value> {
@@ -897,6 +900,7 @@ export class MarginModule__subjectToLiquidationExtendedResult {
     map.set("value1", ethereum.Value.fromAddress(this.value1));
     map.set("value2", ethereum.Value.fromUnsignedBigInt(this.value2));
     map.set("value3", ethereum.Value.fromBoolean(this.value3));
+    map.set("value4", ethereum.Value.fromUnsignedBigInt(this.value4));
     return map;
   }
 
@@ -914,6 +918,10 @@ export class MarginModule__subjectToLiquidationExtendedResult {
 
   getLiquidated(): boolean {
     return this.value3;
+  }
+
+  getInsolvensy_expected_time(): BigInt {
+    return this.value4;
   }
 }
 
@@ -1132,31 +1140,6 @@ export class MarginModule extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  getOrderCollateralAssets(id: BigInt): Array<Address> {
-    let result = super.call(
-      "getOrderCollateralAssets",
-      "getOrderCollateralAssets(uint256):(address[])",
-      [ethereum.Value.fromUnsignedBigInt(id)],
-    );
-
-    return result[0].toAddressArray();
-  }
-
-  try_getOrderCollateralAssets(
-    id: BigInt,
-  ): ethereum.CallResult<Array<Address>> {
-    let result = super.tryCall(
-      "getOrderCollateralAssets",
-      "getOrderCollateralAssets(uint256):(address[])",
-      [ethereum.Value.fromUnsignedBigInt(id)],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toAddressArray());
-  }
-
   getOrderExpirationData(
     id: BigInt,
   ): MarginModule__getOrderExpirationDataResult {
@@ -1192,29 +1175,6 @@ export class MarginModule extends ethereum.SmartContract {
         value[2].toBigInt(),
       ),
     );
-  }
-
-  getOrdersLength(): BigInt {
-    let result = super.call(
-      "getOrdersLength",
-      "getOrdersLength():(uint256)",
-      [],
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getOrdersLength(): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getOrdersLength",
-      "getOrdersLength():(uint256)",
-      [],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
   getPositionActualPools(
@@ -1331,52 +1291,6 @@ export class MarginModule extends ethereum.SmartContract {
     );
   }
 
-  getPositionTokenlistID(_positionId: BigInt): Bytes {
-    let result = super.call(
-      "getPositionTokenlistID",
-      "getPositionTokenlistID(uint256):(bytes32)",
-      [ethereum.Value.fromUnsignedBigInt(_positionId)],
-    );
-
-    return result[0].toBytes();
-  }
-
-  try_getPositionTokenlistID(_positionId: BigInt): ethereum.CallResult<Bytes> {
-    let result = super.tryCall(
-      "getPositionTokenlistID",
-      "getPositionTokenlistID(uint256):(bytes32)",
-      [ethereum.Value.fromUnsignedBigInt(_positionId)],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBytes());
-  }
-
-  getPositionsLength(): BigInt {
-    let result = super.call(
-      "getPositionsLength",
-      "getPositionsLength():(uint256)",
-      [],
-    );
-
-    return result[0].toBigInt();
-  }
-
-  try_getPositionsLength(): ethereum.CallResult<BigInt> {
-    let result = super.tryCall(
-      "getPositionsLength",
-      "getPositionsLength():(uint256)",
-      [],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBigInt());
-  }
-
   getTokenlist(_hash: Bytes): Array<Address> {
     let result = super.call(
       "getTokenlist",
@@ -1417,6 +1331,25 @@ export class MarginModule extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBoolean());
+  }
+
+  multicall(data: Array<Bytes>): Array<Bytes> {
+    let result = super.call("multicall", "multicall(bytes[]):(bytes[])", [
+      ethereum.Value.fromBytesArray(data),
+    ]);
+
+    return result[0].toBytesArray();
+  }
+
+  try_multicall(data: Array<Bytes>): ethereum.CallResult<Array<Bytes>> {
+    let result = super.tryCall("multicall", "multicall(bytes[]):(bytes[])", [
+      ethereum.Value.fromBytesArray(data),
+    ]);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBytesArray());
   }
 
   orderIndex(): BigInt {
@@ -1643,6 +1576,21 @@ export class MarginModule extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
+  priceOracle(): Address {
+    let result = super.call("priceOracle", "priceOracle():(address)", []);
+
+    return result[0].toAddress();
+  }
+
+  try_priceOracle(): ethereum.CallResult<Address> {
+    let result = super.tryCall("priceOracle", "priceOracle():(address)", []);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
   router(): Address {
     let result = super.call("router", "router():(address)", []);
 
@@ -1686,7 +1634,7 @@ export class MarginModule extends ethereum.SmartContract {
   ): MarginModule__subjectToLiquidationExtendedResult {
     let result = super.call(
       "subjectToLiquidationExtended",
-      "subjectToLiquidationExtended(uint256):(bool,address,uint256,bool)",
+      "subjectToLiquidationExtended(uint256):(bool,address,uint256,bool,uint256)",
       [ethereum.Value.fromUnsignedBigInt(positionId)],
     );
 
@@ -1695,6 +1643,7 @@ export class MarginModule extends ethereum.SmartContract {
       result[1].toAddress(),
       result[2].toBigInt(),
       result[3].toBoolean(),
+      result[4].toBigInt(),
     );
   }
 
@@ -1703,7 +1652,7 @@ export class MarginModule extends ethereum.SmartContract {
   ): ethereum.CallResult<MarginModule__subjectToLiquidationExtendedResult> {
     let result = super.tryCall(
       "subjectToLiquidationExtended",
-      "subjectToLiquidationExtended(uint256):(bool,address,uint256,bool)",
+      "subjectToLiquidationExtended(uint256):(bool,address,uint256,bool,uint256)",
       [ethereum.Value.fromUnsignedBigInt(positionId)],
     );
     if (result.reverted) {
@@ -1716,6 +1665,7 @@ export class MarginModule extends ethereum.SmartContract {
         value[1].toAddress(),
         value[2].toBigInt(),
         value[3].toBoolean(),
+        value[4].toBigInt(),
       ),
     );
   }
@@ -1810,6 +1760,10 @@ export class ConstructorCall__Inputs {
 
   get _router(): Address {
     return this._call.inputValues[1].value.toAddress();
+  }
+
+  get _priceOracle(): Address {
+    return this._call.inputValues[2].value.toAddress();
   }
 }
 
