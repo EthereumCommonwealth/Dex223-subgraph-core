@@ -7,10 +7,10 @@ module.exports = {
     contracts: {
       marginModule: {
         name: "MarginModule",
-        // Mainnet v2, 2026-10-07: bound to factory 0x8990...C3a5 and locked to oracle 0xA86B...Dc83
-        // (Dex223-contracts #103).
-        address: "0xd48A17133900495863e93EDD4B2F3eA6015F55e4".toLowerCase(),
-        startBlock: 26140901,
+        // Mainnet v2, redeployed 2026-10-10 with the oracle precision fix: bound to factory
+        // 0x8990...C3a5 and locked to oracle 0xd6bB...2e72. Replaces 0xd48A...55e4 (no orders).
+        address: "0x052FAF5A6aF30259AdE672fECd1cF0225c8dAe17".toLowerCase(),
+        startBlock: 26161429,
       },
       tokenConverter: {
         name: "TokenConverter",
