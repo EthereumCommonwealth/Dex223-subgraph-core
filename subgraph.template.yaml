@@ -6,7 +6,7 @@ schema:
 dataSources:
   - kind: ethereum
     name: MarginModule
-    network: sepolia
+    network: {{network}}
     source:
       address: "{{ v1.contracts.marginModule.address }}"
       abi: MarginModule
