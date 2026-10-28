@@ -7,8 +7,8 @@ module.exports = {
     contracts: {
       marginModule: {
         name: "MarginModule",
-        address: "0x1bB3b0fEE74D530D8c3C532A7683285a76FB9e4B".toLowerCase(),
-        startBlock: 11883781,
+        address: "0x0AC1f13111DdDae2597dfdb0e077aDb611FFFA02".toLowerCase(),
+        startBlock: 12015515,
       },
       tokenConverter: {
         name: "TokenConverter",

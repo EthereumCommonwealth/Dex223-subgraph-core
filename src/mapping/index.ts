@@ -14,6 +14,8 @@ import {
   handlePositionDeposit,
   handlePositionClosed,
   handlePositionWithdrawal,
+  handlePositionUnfrozen,
+  handleLiquidationShortfall,
 } from "./position";
 import { handleMarginSwap } from "./swap";
 
@@ -31,4 +33,6 @@ export {
   handleInitialLeverage,
   handlePositionClosed,
   handlePositionWithdrawal,
+  handlePositionUnfrozen,
+  handleLiquidationShortfall,
 };

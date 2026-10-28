@@ -84,6 +84,32 @@ export class Liquidation__Params {
   }
 }
 
+export class LiquidationShortfall extends ethereum.Event {
+  get params(): LiquidationShortfall__Params {
+    return new LiquidationShortfall__Params(this);
+  }
+}
+
+export class LiquidationShortfall__Params {
+  _event: LiquidationShortfall;
+
+  constructor(event: LiquidationShortfall) {
+    this._event = event;
+  }
+
+  get positionId(): BigInt {
+    return this._event.parameters[0].value.toBigInt();
+  }
+
+  get orderId(): BigInt {
+    return this._event.parameters[1].value.toBigInt();
+  }
+
+  get amount(): BigInt {
+    return this._event.parameters[2].value.toBigInt();
+  }
+}
+
 export class MarginSwap extends ethereum.Event {
   get params(): MarginSwap__Params {
     return new MarginSwap__Params(this);
@@ -474,6 +500,28 @@ export class PositionOpened__Params {
   }
 }
 
+export class PositionUnfrozen extends ethereum.Event {
+  get params(): PositionUnfrozen__Params {
+    return new PositionUnfrozen__Params(this);
+  }
+}
+
+export class PositionUnfrozen__Params {
+  _event: PositionUnfrozen;
+
+  constructor(event: PositionUnfrozen) {
+    this._event = event;
+  }
+
+  get positionId(): BigInt {
+    return this._event.parameters[0].value.toBigInt();
+  }
+
+  get by(): Address {
+    return this._event.parameters[1].value.toAddress();
+  }
+}
+
 export class PositionWithdrawal extends ethereum.Event {
   get params(): PositionWithdrawal__Params {
     return new PositionWithdrawal__Params(this);
@@ -635,9 +683,9 @@ export class MarginModule__getPositionStatusResult {
 
 export class MarginModule__order_statusResult {
   value0: boolean;
-  value1: i32;
+  value1: BigInt;
 
-  constructor(value0: boolean, value1: i32) {
+  constructor(value0: boolean, value1: BigInt) {
     this.value0 = value0;
     this.value1 = value1;
   }
@@ -645,10 +693,7 @@ export class MarginModule__order_statusResult {
   toMap(): TypedMap<string, ethereum.Value> {
     let map = new TypedMap<string, ethereum.Value>();
     map.set("value0", ethereum.Value.fromBoolean(this.value0));
-    map.set(
-      "value1",
-      ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(this.value1)),
-    );
+    map.set("value1", ethereum.Value.fromUnsignedBigInt(this.value1));
     return map;
   }
 
@@ -656,7 +701,7 @@ export class MarginModule__order_statusResult {
     return this.value0;
   }
 
-  getPositions(): i32 {
+  getPositions(): BigInt {
     return this.value1;
   }
 }
@@ -955,6 +1000,29 @@ export class MarginModule extends ethereum.SmartContract {
     return new MarginModule("MarginModule", address);
   }
 
+  MAINTENANCE_MARGIN_BPS(): BigInt {
+    let result = super.call(
+      "MAINTENANCE_MARGIN_BPS",
+      "MAINTENANCE_MARGIN_BPS():(uint256)",
+      [],
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_MAINTENANCE_MARGIN_BPS(): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "MAINTENANCE_MARGIN_BPS",
+      "MAINTENANCE_MARGIN_BPS():(uint256)",
+      [],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   addTokenlist(tokens: Array<Address>, isContract: boolean): Bytes {
     let result = super.call(
       "addTokenlist",
@@ -1177,41 +1245,6 @@ export class MarginModule extends ethereum.SmartContract {
     );
   }
 
-  getPositionActualPools(
-    _positionId: BigInt,
-    _feeTiers: Array<i32>,
-  ): Array<Address> {
-    let result = super.call(
-      "getPositionActualPools",
-      "getPositionActualPools(uint256,uint24[]):(address[])",
-      [
-        ethereum.Value.fromUnsignedBigInt(_positionId),
-        ethereum.Value.fromI32Array(_feeTiers),
-      ],
-    );
-
-    return result[0].toAddressArray();
-  }
-
-  try_getPositionActualPools(
-    _positionId: BigInt,
-    _feeTiers: Array<i32>,
-  ): ethereum.CallResult<Array<Address>> {
-    let result = super.tryCall(
-      "getPositionActualPools",
-      "getPositionActualPools(uint256,uint24[]):(address[])",
-      [
-        ethereum.Value.fromUnsignedBigInt(_positionId),
-        ethereum.Value.fromI32Array(_feeTiers),
-      ],
-    );
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toAddressArray());
-  }
-
   getPositionAssets(id: BigInt): Array<Address> {
     let result = super.call(
       "getPositionAssets",
@@ -1367,16 +1400,39 @@ export class MarginModule extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
+  orderShortfall(param0: BigInt): BigInt {
+    let result = super.call(
+      "orderShortfall",
+      "orderShortfall(uint256):(uint256)",
+      [ethereum.Value.fromUnsignedBigInt(param0)],
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_orderShortfall(param0: BigInt): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "orderShortfall",
+      "orderShortfall(uint256):(uint256)",
+      [ethereum.Value.fromUnsignedBigInt(param0)],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   order_status(param0: BigInt): MarginModule__order_statusResult {
     let result = super.call(
       "order_status",
-      "order_status(uint256):(bool,uint8)",
+      "order_status(uint256):(bool,uint248)",
       [ethereum.Value.fromUnsignedBigInt(param0)],
     );
 
     return new MarginModule__order_statusResult(
       result[0].toBoolean(),
-      result[1].toI32(),
+      result[1].toBigInt(),
     );
   }
 
@@ -1385,7 +1441,7 @@ export class MarginModule extends ethereum.SmartContract {
   ): ethereum.CallResult<MarginModule__order_statusResult> {
     let result = super.tryCall(
       "order_status",
-      "order_status(uint256):(bool,uint8)",
+      "order_status(uint256):(bool,uint248)",
       [ethereum.Value.fromUnsignedBigInt(param0)],
     );
     if (result.reverted) {
@@ -1395,7 +1451,7 @@ export class MarginModule extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(
       new MarginModule__order_statusResult(
         value[0].toBoolean(),
-        value[1].toI32(),
+        value[1].toBigInt(),
       ),
     );
   }
@@ -1929,6 +1985,44 @@ export class LiquidateCall__Outputs {
   _call: LiquidateCall;
 
   constructor(call: LiquidateCall) {
+    this._call = call;
+  }
+}
+
+export class LiquidateStepCall extends ethereum.Call {
+  get inputs(): LiquidateStepCall__Inputs {
+    return new LiquidateStepCall__Inputs(this);
+  }
+
+  get outputs(): LiquidateStepCall__Outputs {
+    return new LiquidateStepCall__Outputs(this);
+  }
+}
+
+export class LiquidateStepCall__Inputs {
+  _call: LiquidateStepCall;
+
+  constructor(call: LiquidateStepCall) {
+    this._call = call;
+  }
+
+  get positionId(): BigInt {
+    return this._call.inputValues[0].value.toBigInt();
+  }
+
+  get asset(): Address {
+    return this._call.inputValues[1].value.toAddress();
+  }
+
+  get amount(): BigInt {
+    return this._call.inputValues[2].value.toBigInt();
+  }
+}
+
+export class LiquidateStepCall__Outputs {
+  _call: LiquidateStepCall;
+
+  constructor(call: LiquidateStepCall) {
     this._call = call;
   }
 }
@@ -2544,6 +2638,36 @@ export class TokenReceivedCall__Outputs {
 
   get value0(): Bytes {
     return this._call.outputValues[0].value.toBytes();
+  }
+}
+
+export class UnfreezeCall extends ethereum.Call {
+  get inputs(): UnfreezeCall__Inputs {
+    return new UnfreezeCall__Inputs(this);
+  }
+
+  get outputs(): UnfreezeCall__Outputs {
+    return new UnfreezeCall__Outputs(this);
+  }
+}
+
+export class UnfreezeCall__Inputs {
+  _call: UnfreezeCall;
+
+  constructor(call: UnfreezeCall) {
+    this._call = call;
+  }
+
+  get positionId(): BigInt {
+    return this._call.inputValues[0].value.toBigInt();
+  }
+}
+
+export class UnfreezeCall__Outputs {
+  _call: UnfreezeCall;
+
+  constructor(call: UnfreezeCall) {
+    this._call = call;
   }
 }
 
