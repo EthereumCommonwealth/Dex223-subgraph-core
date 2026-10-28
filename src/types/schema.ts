@@ -556,6 +556,19 @@ export class Order extends Entity {
   set alive(value: boolean) {
     this.set("alive", Value.fromBoolean(value));
   }
+
+  get shortfall(): BigInt {
+    let value = this.get("shortfall");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set shortfall(value: BigInt) {
+    this.set("shortfall", Value.fromBigInt(value));
+  }
 }
 
 export class PositionAssets extends Entity {
@@ -896,8 +909,25 @@ export class Position extends Entity {
     }
   }
 
-  get leverage(): BigInt | null {
+  get leverage(): BigDecimal | null {
     let value = this.get("leverage");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigDecimal();
+    }
+  }
+
+  set leverage(value: BigDecimal | null) {
+    if (!value) {
+      this.unset("leverage");
+    } else {
+      this.set("leverage", Value.fromBigDecimal(<BigDecimal>value));
+    }
+  }
+
+  get shortfall(): BigInt | null {
+    let value = this.get("shortfall");
     if (!value || value.kind == ValueKind.NULL) {
       return null;
     } else {
@@ -905,11 +935,11 @@ export class Position extends Entity {
     }
   }
 
-  set leverage(value: BigInt | null) {
+  set shortfall(value: BigInt | null) {
     if (!value) {
-      this.unset("leverage");
+      this.unset("shortfall");
     } else {
-      this.set("leverage", Value.fromBigInt(<BigInt>value));
+      this.set("shortfall", Value.fromBigInt(<BigInt>value));
     }
   }
 

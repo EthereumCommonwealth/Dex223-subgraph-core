@@ -10,6 +10,8 @@ import {
   PositionClosed,
   PositionDeposit,
   PositionFrozen,
+  PositionUnfrozen,
+  LiquidationShortfall,
   PositionLiquidated,
   PositionOpened,
   PositionWithdrawal,
@@ -342,6 +344,38 @@ export function createOrderAliveStatusEvent(
   );
   event.parameters.push(
     new ethereum.EventParam("alive", ethereum.Value.fromBoolean(alive))
+  );
+  return event;
+}
+
+export function createPositionUnfrozenEvent(
+  positionId: BigInt,
+  by: Address
+): PositionUnfrozen {
+  let event = changetype<PositionUnfrozen>(newMockEvent());
+  event.parameters = new Array();
+  event.parameters.push(
+    new ethereum.EventParam("positionId", ethereum.Value.fromUnsignedBigInt(positionId))
+  );
+  event.parameters.push(new ethereum.EventParam("by", ethereum.Value.fromAddress(by)));
+  return event;
+}
+
+export function createLiquidationShortfallEvent(
+  positionId: BigInt,
+  orderId: BigInt,
+  amount: BigInt
+): LiquidationShortfall {
+  let event = changetype<LiquidationShortfall>(newMockEvent());
+  event.parameters = new Array();
+  event.parameters.push(
+    new ethereum.EventParam("positionId", ethereum.Value.fromUnsignedBigInt(positionId))
+  );
+  event.parameters.push(
+    new ethereum.EventParam("orderId", ethereum.Value.fromUnsignedBigInt(orderId))
+  );
+  event.parameters.push(
+    new ethereum.EventParam("amount", ethereum.Value.fromUnsignedBigInt(amount))
   );
   return event;
 }

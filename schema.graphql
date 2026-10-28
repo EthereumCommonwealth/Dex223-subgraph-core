@@ -38,6 +38,7 @@ type Order @entity {
   collateralTokens: [Token!]!
   positions: [Position!]! @derivedFrom(field: "order")
   alive: Boolean! # true если order создан, false если заморожен или ликвидирован
+  shortfall: BigInt! # debt liquidations could not recover, summed over the order's positions (LiquidationShortfall)
 }
 
 type PositionAssets @entity {
@@ -65,7 +66,8 @@ type Position @entity {
   frozenTime: BigInt # timestamp из PositionFrozen
   liquidator: Bytes # из PositionFrozen / PositionLiquidated
   loanAmount: BigInt # loanAmount из PositionOpened
-  leverage: BigInt # leverage the position was opened at, from InitialLeverage
+  leverage: BigDecimal # leverage the position was opened at, from InitialLeverage (2.5 = 2.5x)
+  shortfall: BigInt # debt the liquidation could not recover, from LiquidationShortfall
   # таймстемп обновления
   isLiquidated: Boolean! # true после PositionLiquidated
   liquidatedAt: BigInt # timestamp из PositionLiquidated

@@ -1,11 +1,14 @@
+import { BigDecimal, BigInt } from "@graphprotocol/graph-ts";
 import {
   PositionOpened,
   InitialLeverage,
   PositionDeposit,
   PositionFrozen,
+  PositionUnfrozen,
   PositionClosed,
   PositionWithdrawal,
   PositionLiquidated,
+  LiquidationShortfall,
 } from "../types/MarginModule/MarginModule";
 // import { fetchTokenAddress, fetchToken } from "../utils/token";
 
@@ -245,7 +248,39 @@ export function handleInitialLeverage(event: InitialLeverage): void {
     ]);
     return;
   }
-  position.leverage = event.params.leverage;
+  // The contract scales the ratio by 100 (250 = 2.5x). It used to emit the integer-divided ratio,
+  // which reported a 1.99x position as 1x.
+  position.leverage = event.params.leverage.toBigDecimal().div(BigDecimal.fromString("100"));
   position.updatedAt = event.block.timestamp;
   position.save();
+}
+
+/// unfreeze() lifted the freeze of a position that is no longer liquidatable (or the price
+/// recovered and the owner closed it; PositionClosed handles that case).
+export function handlePositionUnfrozen(event: PositionUnfrozen): void {
+  const id = event.params.positionId.toString();
+  let position = Position.load(id);
+  if (position == null) return;
+  position.frozenTime = BigInt.zero();
+  position.liquidator = null;
+  position.updatedAt = event.block.timestamp;
+  loadTransaction(event, "PositionUnfrozen", position);
+  position.save();
+}
+
+/// A liquidation sold everything the position held and still fell short of the debt by `amount`.
+/// The order's balance only ever receives what was recovered, so this is the lender's realised loss.
+export function handleLiquidationShortfall(event: LiquidationShortfall): void {
+  const id = event.params.positionId.toString();
+  let position = Position.load(id);
+  if (position == null) return;
+  position.shortfall = event.params.amount;
+  position.updatedAt = event.block.timestamp;
+  position.save();
+
+  let order = Order.load(event.params.orderId.toString());
+  if (order == null) return;
+  order.shortfall = order.shortfall.plus(event.params.amount);
+  order.updatedAt = event.block.timestamp;
+  order.save();
 }

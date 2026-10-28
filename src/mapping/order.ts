@@ -39,6 +39,7 @@ function exportOrder(event: OrderCreated): Order | null {
   let order = Order.load(id);
   if (order == null) {
     order = new Order(id);
+    order.shortfall = BigInt.zero();
   }
 
   let collateraStrings = new Array<string>();

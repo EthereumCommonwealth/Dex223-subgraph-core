@@ -19,6 +19,8 @@ import {
   handlePositionWithdrawal,
   handlePositionDeposit,
   handlePositionOpened,
+  handlePositionUnfrozen,
+  handleLiquidationShortfall,
 } from "../src/mapping/position";
 import {
   handleOrderDeposit,
@@ -40,6 +42,8 @@ import {
   createOrderCreatedEvent,
   createOrderAliveStatusEvent,
   createPositionOpenedEvent,
+  createPositionUnfrozenEvent,
+  createLiquidationShortfallEvent,
 } from "./margin-module-utils";
 
 // NOTE: this file previously imported from
@@ -179,11 +183,11 @@ describe("handleInitialLeverage", () => {
     position.save();
   });
 
-  test("records the opening leverage on the position", () => {
+  test("records the opening leverage on the position, unscaling the contract's x100", () => {
     handleInitialLeverage(
-      createInitialLeverageEvent(BigInt.fromI32(234), BigInt.fromI32(7))
+      createInitialLeverageEvent(BigInt.fromI32(234), BigInt.fromI32(250))
     );
-    assert.fieldEquals("Position", POSITION_ID, "leverage", "7");
+    assert.fieldEquals("Position", POSITION_ID, "leverage", "2.5");
   });
 
   test("ignores the event when the position is unknown", () => {
@@ -211,6 +215,50 @@ function seedPosition(id: string): Position {
   position.save();
   return position;
 }
+
+describe("handlePositionUnfrozen", () => {
+  beforeAll(() => {
+    clearStore();
+    seedPosition(POSITION_ID);
+    handlePositionFrozen(
+      createPositionFrozenEvent(BigInt.fromI32(234), Address.fromString(ASSET), BigInt.fromI32(4242))
+    );
+    handlePositionUnfrozen(
+      createPositionUnfrozenEvent(BigInt.fromI32(234), Address.fromString(ASSET))
+    );
+  });
+
+  test("clears the freeze and the liquidator", () => {
+    assert.fieldEquals("Position", POSITION_ID, "frozenTime", "0");
+    assert.fieldEquals("Position", POSITION_ID, "liquidator", "null");
+  });
+
+  test("ignores an unknown position", () => {
+    handlePositionUnfrozen(
+      createPositionUnfrozenEvent(BigInt.fromI32(999), Address.fromString(ASSET))
+    );
+    assert.notInStore("Position", "999");
+  });
+});
+
+describe("handleLiquidationShortfall", () => {
+  beforeAll(() => {
+    clearStore();
+    seedOrder();
+    seedPosition(POSITION_ID);
+    handleLiquidationShortfall(
+      createLiquidationShortfallEvent(BigInt.fromI32(234), BigInt.fromI32(1), BigInt.fromI32(80))
+    );
+    handleLiquidationShortfall(
+      createLiquidationShortfallEvent(BigInt.fromI32(234), BigInt.fromI32(1), BigInt.fromI32(20))
+    );
+  });
+
+  test("records the shortfall on the position and sums it on the order", () => {
+    assert.fieldEquals("Position", POSITION_ID, "shortfall", "20");
+    assert.fieldEquals("Order", "1", "shortfall", "100");
+  });
+});
 
 describe("handlePositionFrozen", () => {
   beforeAll(() => {
@@ -288,6 +336,7 @@ function seedOrder(): void {
   order.collaterals = [];
   order.collateralTokens = [];
   order.alive = true;
+  order.shortfall = BigInt.zero();
   order.save();
 }
 

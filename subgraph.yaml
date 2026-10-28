@@ -66,4 +66,8 @@ dataSources:
           handler: handlePositionOpened
         - event: InitialLeverage(uint256,uint256)
           handler: handleInitialLeverage
+        - event: PositionUnfrozen(indexed uint256,address)
+          handler: handlePositionUnfrozen
+        - event: LiquidationShortfall(indexed uint256,indexed uint256,uint256)
+          handler: handleLiquidationShortfall
       file: ./src/mapping/index.ts
