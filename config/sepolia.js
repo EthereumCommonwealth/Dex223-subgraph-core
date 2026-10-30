@@ -7,8 +7,9 @@ module.exports = {
     contracts: {
       marginModule: {
         name: "MarginModule",
-        address: "0x0AC1f13111DdDae2597dfdb0e077aDb611FFFA02".toLowerCase(),
-        startBlock: 12015515,
+        // Sepolia v4, 2026-10-30 (October 2026 security fixes).
+        address: "0x0cc18a9557230Da8b92A73dB7A6CE0FC41abb3De".toLowerCase(),
+        startBlock: 12026962,
       },
       tokenConverter: {
         name: "TokenConverter",
