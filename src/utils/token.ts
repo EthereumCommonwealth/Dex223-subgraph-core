@@ -257,9 +257,22 @@ export function fetchTokenAddress(address: Address): TokenAddresses {
     }
   }
 
-  // 2) If not a wrapper or got revert above — predict wrapper
+  // 2) Not a wrapper: an original token. Tokens issued as ERC-223 (standard() == 223, e.g. D223 or
+  //    tokens made with Create token as ERC-223) are the ERC-223 side, and their ERC-20 side is the
+  //    converter's ERC-20 wrapper. Treating them as ERC-20 invented a non-existent ERC-223 address
+  //    and a second Token for the same asset (Sepolia order 7: T110526 listed twice).
+  const standard = getStandard(address);
+  if (standard !== null && standard.equals(BigInt.fromI32(223))) {
+    const wrapperCall = tokenConverterContract.try_getERC20WrapperFor(address);
+    if (!wrapperCall.reverted && wrapperCall.value.toHexString() != ADDRESS_ZERO) {
+      return new TokenAddresses(wrapperCall.value, address);
+    }
+    // No ERC-20 wrapper deployed yet: use the address the converter will deploy it at.
+    return new TokenAddresses(getPredictAddress(address, false), address);
+  }
+
+  // 3) An ERC-20 original: its ERC-223 side is the converter's (possibly not yet deployed) wrapper.
   const predictCall = getPredictAddress(address, true);
-  // 3) Fallback: return original in both fields
   return new TokenAddresses(address, predictCall);
 }
 
